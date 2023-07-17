@@ -1,6 +1,6 @@
-using .Threads
-using BioAlignments
-using ProgressMeter
+using .Threads: @threads
+using BioAlignments: LocalAlignment, AffineGapScoreModel, BLOSUM62, pairalign
+using ProgressMeter: Progress, next!
 
 function pairalign_multithread(
     queries::Vector,
@@ -24,7 +24,7 @@ function pairalign_multithread(
     end
     # do the thing
     Threads.@threads for i=1:n
-        res = BioAlignments.pairalign(mode, queries[i], references[i], cost)
+        res = pairalign(mode, queries[i], references[i], cost)
         results[i] = formatter(res)
         if verbose
             next!(p)

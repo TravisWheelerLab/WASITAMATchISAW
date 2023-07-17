@@ -6,8 +6,9 @@ module BLAST
         pathtoqueryseq::String,
         pathtotargetdb::String;
         pathtomaskdb::String="",
+        numthreads::Int=1,
     )
-        command = "blastp -query $(pathtoqueryseq) -db $(pathtotargetdb) -word_size 4 -outfmt 7"
+        command = "blastp -query $(pathtoqueryseq) -db $(pathtotargetdb) -word_size 4 -outfmt 7 -num_threads $(numthreads)"
         if length(pathtomaskdb) > 0
             command *= "-commanddb_hard_mask 100"
         end
@@ -16,7 +17,7 @@ module BLAST
 
     # TODO
     function blastn()
-        nothing
+        @assert false "not yet implemented"
     end
 
     function makeblastdb(
