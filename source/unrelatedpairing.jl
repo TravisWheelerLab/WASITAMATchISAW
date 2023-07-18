@@ -19,7 +19,7 @@ end
 
 """
 """
-function samplecomplement_weighted(
+function samplecomplement(
     space, 
     excluded_element::Int, 
     weights::Vector{Int},
@@ -124,11 +124,7 @@ function disjointpermutation(
             else
                 # if elements are nonuniformly distributed, weighted sampling is much more likely
                 # to complete without depletion, although it can be slower.
-                b = samplecomplement_weighted(1:nclusters, a, clusterlengths)
-                while npops[b] >= clusterlengths[b]
-                    # loop until the sampled cluster is not depleted.
-                    b = samplecomplement_weighted(1:nclusters, a, clusterlengths)
-                end
+                b = samplecomplement(1:nclusters, a, clusterlengths .- npops)
             end
             # finally, pair to a random element of the complementary cluster.
             npops[b] += 1
