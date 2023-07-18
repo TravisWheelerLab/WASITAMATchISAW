@@ -4,7 +4,7 @@ using ProgressMeter: Progress, next!
 """
 """
 function samplecomplement(
-    space::Vector{Int}, 
+    space, 
     excluded_element::Int,
 )
     n = length(space)
@@ -20,7 +20,7 @@ end
 """
 """
 function samplecomplement_weighted(
-    space::Vector{Int}, 
+    space, 
     excluded_element::Int, 
     weights::Vector{Int},
 )
@@ -77,8 +77,7 @@ more than half of the elements belong to one cluster, no such ρ can exist.
 """
 function disjointpermutation(
     elements_by_cluster::Vector{Int};
-    weighted=false,
-    verbose=false,
+    weighted=false
 )
     # extract cluster names and enumerate them
     nclusters = length(unique(elements_by_cluster))
@@ -89,51 +88,52 @@ function disjointpermutation(
         a = elements_by_cluster[i]
         push!(clusters[a], i)
     end
+    clusterlengths = length.(clusters)
     # shuffle to minimize sampling bias
     for a=1:nclusters
         shuffle!(clusters[a])
     end
     # construct the pairing
-    ρ = Vector{Int}(undef, nelements)
-    # keep track of how many elements have been popped from each cluster.
-    # TODO: replace lines 101-108 and 117-120 with logic using npops
-    npops = zeros(nclusters)
-    # create a progress bar
-    if verbose
-        p = Progress(n, 0.1, "Aligning...")
-    end
-    for i=1:nelements
-        # identify nonempty clusters and their lengths
-        clusterlengths = (a -> length(clusters[a])).(1:nclusters)
-        nonemptyclusters = filter(l -> l > 0, clusterlengths)
-        # check for depletion
-        if len(nonemptyclusters) == 1 && i < n_elts
-            # there is only one non-empty cluster remaining, so pairing cannot proceed.
-            # if one cluster contains more than 50%, pairing will always fail!
-            return ρ
-        end
-        # retrieve the cluster of the element
-        a = elements_by_cluster[i]
-        # and select a complementary cluster
-        b = -1
-        if not weighted
-            # if the elements are uniformly distributed into clusters, this method is faster
-            # and (usually) won't cause depletion
-            b = samplecomplement(1:nclusters, a)
-            while length(clusters[b]) == 0
-                # loop until the sampled cluster is not depleted.
-                b = samplecomplement(1:nclusters, a)
+    ρ = fill(-1, nelements)
+    while -1 in ρ
+        # keep track of how many elements have been popped from each cluster.
+        # TODO: replace lines 101-108 and 117-120 with logic using npops
+        npops = zeros(Int, nclusters)
+        for i=1:nelements
+            # identify nonempty clusters and their lengths
+            nonemptyclusters = filter(i -> npops[i] < clusterlengths[i], 1:nclusters)
+            # check for depletion
+            if length(nonemptyclusters) == 1 && elements_by_cluster[i] == nonemptyclusters[1]
+                # there is only one non-empty cluster remaining, so pairing cannot proceed.
+                # if one cluster contains more than 50%, pairing will always fail!
+                @warn "depletion occurred after $(i) iterations"
+                break
             end
-        else
-            # if elements are nonuniformly distributed, weighted sampling is much more likely
-            # to complete without depletion, although it can be slower.
-            b = samplecomplement_weighted(1:nclusters, a, clusterlengths)
-        end
-        # finally, pair to a random element of the complementary cluster.
-        j = clusterpops
-        ρ[i] = j
-        if verbose
-            next!(p)
+            # retrieve the cluster of the element
+            a = elements_by_cluster[i]
+            # and select a complementary cluster
+            b = -1
+            if !weighted
+                # if the elements are uniformly distributed into clusters, this method is faster
+                # and (usually) won't cause depletion
+                b = samplecomplement(1:nclusters, a)
+                while npops[b] >= clusterlengths[b]
+                    # loop until the sampled cluster is not depleted.
+                    b = samplecomplement(1:nclusters, a)
+                end
+            else
+                # if elements are nonuniformly distributed, weighted sampling is much more likely
+                # to complete without depletion, although it can be slower.
+                b = samplecomplement_weighted(1:nclusters, a, clusterlengths)
+                while npops[b] >= clusterlengths[b]
+                    # loop until the sampled cluster is not depleted.
+                    b = samplecomplement_weighted(1:nclusters, a, clusterlengths)
+                end
+            end
+            # finally, pair to a random element of the complementary cluster.
+            npops[b] += 1
+            j = npops[b]
+            ρ[i] = clusters[b][j]
         end
     end
     ρ
