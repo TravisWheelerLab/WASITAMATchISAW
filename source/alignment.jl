@@ -1,18 +1,16 @@
-using .Threads: @threads
+using Base.Iterators: Stateful, popfirst!
+using Base.Threads: @threads
 using BioAlignments: LocalAlignment, AffineGapScoreModel, BLOSUM62, pairalign
 using ProgressMeter: Progress, next!
 
-function pairalign_multithread(
-    queries::Vector,
-    references::Vector;
-    verbose=true,
-    mode=LocalAlignment(),
-    cost=AffineGapScoreModel(BLOSUM62, -11, -1),
-    formatter::Function=x::PairwiseAlignmentResult->x,
+function paired_alignment(
+    pairs::Base.Iterators.Zip,
+    n::Int,
+    model,
+    schema,
+    formatter,
+    verbose,
 )
-    n = length(queries)
-    # sanity check
-    @assert length(references) == n
     # what type does the formatter return? 
     ## `Base.return_types` returns a list of types. we unravel `...` this vector and recollect its elements as a `Union` of types.
     result_type = Union{Base.return_types(formatter)...}
@@ -23,8 +21,10 @@ function pairalign_multithread(
         p = Progress(n, 0.1, "Aligning...")
     end
     # do the thing
+    pairgenerator = Stateful(pairs)
     Threads.@threads for i=1:n
-        res = pairalign(mode, queries[i], references[i], cost)
+        (query, reference) = popfirst!(pairgenerator)
+        res = pairalign(model, query, reference, schema)
         results[i] = formatter(res)
         if verbose
             next!(p)
