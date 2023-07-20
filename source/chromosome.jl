@@ -15,7 +15,7 @@ end
 
 "load chromosome record from a .fasta."
 function loadchromosome(path_to_record)
-    record = collect(FASTAReader(open(path_to_record)))[1]
+    record = readfasta(path_to_record, singleton=true) #collect(FASTAReader(open(path_to_record)))[1]
     metadata, sequence = split(string(record), '\n')
     gnav = split(metadata, ' ')[1][2:end]
     Chromosome(record, sequence, gnav, metadata)
