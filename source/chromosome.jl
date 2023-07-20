@@ -1,10 +1,4 @@
-using CSV, DataFrames, FASTX
-
-data_dir = "../data/"
-path_to_chromosome = data_dir * "ncbi_chr22_sequence.fasta"
-path_to_protein = data_dir * "ncbi_chr22_proteincoding.txt" # tabular
-path_to_rna = data_dir * "ncbi_chr22_rnacoding.txt" # tabular
-path_to_pseudo = data_dir * "ncbi_chr22_pseudo.txt" # tabular
+using CSV: File, DataFrames: DataFrame, dropmissing
 
 struct Chromosome
     record::FASTARecord
@@ -14,8 +8,8 @@ struct Chromosome
 end
 
 "load chromosome record from a .fasta."
-function loadchromosome(path_to_record)
-    record = readfasta(path_to_record, singleton=true) #collect(FASTAReader(open(path_to_record)))[1]
+function loadchromosome(pathtorecord)
+    record = readfasta(pathtorecord, singleton=true)
     metadata, sequence = split(string(record), '\n')
     gnav = split(metadata, ' ')[1][2:end]
     Chromosome(record, sequence, gnav, metadata)
@@ -36,7 +30,7 @@ ENDPOS = "end_position_on_the_genomic_accession"
 GNAV = "genomic_nucleotide_accession.version"
 
 "load a chromosome annotation file in the NCBI tabular format."
-loadannotation(path_to_annotation) = Annotation(dropmissing(DataFrame(CSV.File(path_to_annotation))[:, [STARTPOS, ENDPOS, GNAV]]))
+loadannotation(pathtoannotation) = Annotation(dropmissing(DataFrame(File(pathtoannotation))[:, [STARTPOS, ENDPOS, GNAV]]))
 
 gnav(annotation::Annotation) = annotation[:, GNAV]
 

@@ -1,8 +1,10 @@
+using FASTX: FASTAReader
+
 function readfasta(
-    path::AbstractString;
+    pathtorecord::AbstractString;
     singleton=false,
 )   
-    records = collect(FASTAReader(open(path_to_record)))
+    records = collect(FASTAReader(open(pathtorecord)))
     if singleton
         return records[1]
     else
