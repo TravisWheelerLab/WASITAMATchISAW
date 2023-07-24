@@ -40,13 +40,11 @@ function palindromeradii(
     radius = 0
     center = 1
     while center <= n
-        println('c', center)
         left = center - (radius + 1)
         right = center + (radius + 1)
         while (left >= 1
             && right <= n 
             && augmentedsequence[left] == augmentedsequence[right])
-            println(left, '\t', right)
             radius += 1
             left = center - (radius + 1)
             right = center + (radius + 1)
@@ -57,7 +55,6 @@ function palindromeradii(
         center += 1
         radius = 0
         while center <= oldcenter + oldradius
-            println("c!", center)
             mirroredcenter = oldcenter - (center - oldcenter)
             maxmirroredradius = oldcenter + oldradius - center
             if radii[mirroredcenter] < maxmirroredradius
