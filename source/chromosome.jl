@@ -1,4 +1,10 @@
-using CSV: File, DataFrames: DataFrame, dropmissing
+module NCBI
+
+export Chromosome, record, sequence, gnav
+export Annotation, gnav, frames, segment, regions, annotate
+
+using DataFrames: DataFrame, dropmissing
+using FASTX: FASTARecord
 
 struct Chromosome
     record::FASTARecord
@@ -7,18 +13,8 @@ struct Chromosome
     _metadata::AbstractString
 end
 
-"load chromosome record from a .fasta."
-function loadchromosome(pathtorecord)
-    record = readfasta(pathtorecord, singleton=true)
-    metadata, sequence = split(string(record), '\n')
-    gnav = split(metadata, ' ')[1][2:end]
-    Chromosome(record, sequence, gnav, metadata)
- end
-
 record(chromosome::Chromosome) = chromosome.record
-
 sequence(chromosome::Chromosome) = chromosome.sequence
-
 gnav(chromosome::Chromosome) = chromosome.gnav
 
 struct Annotation
@@ -28,9 +24,6 @@ end
 STARTPOS = "start_position_on_the_genomic_accession"
 ENDPOS = "end_position_on_the_genomic_accession"
 GNAV = "genomic_nucleotide_accession.version"
-
-"load a chromosome annotation file in the NCBI tabular format."
-loadannotation(pathtoannotation) = Annotation(dropmissing(DataFrame(File(pathtoannotation))[:, [STARTPOS, ENDPOS, GNAV]]))
 
 gnav(annotation::Annotation) = annotation[:, GNAV]
 
@@ -52,3 +45,4 @@ function annotate(chromosome::Chromosome, annotation::Annotation)
 	regions(chromosome, annotation)	
 end
 
+end
