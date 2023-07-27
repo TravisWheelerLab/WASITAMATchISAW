@@ -1,4 +1,3 @@
-# figure 7
 using Base.Threads: @threads
 using FASTX: sequence
 using ProgressMeter: Progress, next!
@@ -14,9 +13,8 @@ pathinput = ARGS[1]
 pathoutput = ARGS[2]
 minlength = parse(Int, ARGS[3])
 maxlength = parse(Int, ARGS[4])
-longestpalindrome = parse(Int, ARGS[5])
-if length(ARGS) > 5
-    mode = ARGS[6]
+if length(ARGS) > 4
+    mode = ARGS[5]
 else
     mode = "-"
 end
@@ -27,7 +25,7 @@ sequences = [seq for seq=sequence.(records) if 50 < length(seq) < 2000]
 shuffle!(sequences)
 longestsequence = reduce(max, length.(sequences))
 
-distribution = zeros(Int, (longestsequence, longestpalindrome))
+distribution = zeros(Int, (maxlength, maxlength))
 if mode == "-"
     trypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
 elseif mode == "s"
