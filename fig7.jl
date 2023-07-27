@@ -32,6 +32,8 @@ if mode == "-"
     trypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
 elseif mode == "s"
     shuffledtrypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
+else
+    @warn "unrecognized mode argument. the output matrix is blank."
 end
 
 writedlm(pathoutput, distribution)

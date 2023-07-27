@@ -29,20 +29,13 @@ end
 
 trypticpeptides(q::AbstractString, minlength::Int, maxlength::Int) = nested_subintervals(trypsin_cleave_locations(q), minlength, maxlength)
 
-maxti = 0
-
 function trypticpalindromedistribution!(
     distribution::Matrix{Int}, 
     seq::AbstractString, 
     minlength::Int, 
     maxlength::Int
 )
-    global maxti
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
-    if length(trypticintervals) > maxti
-        maxti = length(trypticintervals)
-        println(maxti)
-    end
     trypticsequences = view.(seq, (start:stop for (start, stop)=trypticintervals))
     lps = longestpalindromicsubstring.(trypticsequences)
     palindromelengths = (x::Tuple{Int, Int} -> x[2]-x[1]).(lps)
@@ -72,12 +65,7 @@ function shuffledtrypticpalindromedistribution!(
     minlength::Int, 
     maxlength::Int
 )
-    global maxti
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
-    if length(trypticintervals) > maxti
-        maxti = length(trypticintervals)
-        println(maxti)
-    end
     trypticsequences = (seq[start:stop] for (start, stop)=trypticintervals)
     lps = longestpalindromicsubstring.(shufflefast.(trypticsequences))
     palindromelengths = (x::Tuple{Int, Int} -> x[2]-x[1]).(lps)
