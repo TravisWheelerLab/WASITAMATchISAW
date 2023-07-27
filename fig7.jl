@@ -5,6 +5,7 @@ using ProgressMeter: Progress, next!
 using DelimitedFiles: writedlm
 using Random: shuffle!
 
+include("source/utils.jl")
 include("source/io.jl");
 include("source/trypsin.jl");
 include("source/palindrome.jl");
@@ -14,6 +15,11 @@ pathoutput = ARGS[2]
 minlength = parse(Int, ARGS[3])
 maxlength = parse(Int, ARGS[4])
 longestpalindrome = parse(Int, ARGS[5])
+if length(ARGS) > 5
+    mode = ARGS[6]
+else
+    mode = "-"
+end
 
 records = readfasta(pathinput)
 
@@ -22,6 +28,10 @@ shuffle!(sequences)
 longestsequence = reduce(max, length.(sequences))
 
 distribution = zeros(Int, (longestsequence, longestpalindrome))
-trypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
+if mode == "-"
+    trypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
+elseif mode == "s"
+    shuffledtrypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
+end
 
 writedlm(pathoutput, distribution)

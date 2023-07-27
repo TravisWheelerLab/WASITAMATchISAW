@@ -28,4 +28,4 @@ function loadchromosome(pathtorecord)
  end
 
 "load a chromosome annotation file in the NCBI tabular format."
-loadannotation(pathtoannotation) = Annotation(dropmissing(DataFrame(File(pathtoannotation))[:, [STARTPOS, ENDPOS, GNAV]]))
+loadannotation(pathtoannotation) = Annotation(dropmissing(DataFrame(File(pathtoannotation))[:, [STARTPOS, ENDPOS, GNAV]]))sech

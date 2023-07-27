@@ -1,6 +1,12 @@
+using Random: shuffle, shuffle!
+
 trypsin_cleave_locations(q::AbstractString) = [i for i=1:length(q) if Char(q[i]) == 'K' || Char(q[i]) == 'R']
 
-function nested_subintervals(locii::Vector{Int}, minlength::Int, maxlength::Int)
+function nested_subintervals(
+    locii::Vector{Int}, 
+    minlength::Int, 
+    maxlength::Int
+)
     intervals = Tuple{Int, Int}[]
     for x=1:length(locii)-1
         start = -1
@@ -23,14 +29,20 @@ end
 
 trypticpeptides(q::AbstractString, minlength::Int, maxlength::Int) = nested_subintervals(trypsin_cleave_locations(q), minlength, maxlength)
 
+maxti = 0
+
 function trypticpalindromedistribution!(
     distribution::Matrix{Int}, 
     seq::AbstractString, 
     minlength::Int, 
     maxlength::Int
 )
+    global maxti
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
-    println(length(trypticintervals))
+    if length(trypticintervals) > maxti
+        maxti = length(trypticintervals)
+        println(maxti)
+    end
     trypticsequences = view.(seq, (start:stop for (start, stop)=trypticintervals))
     lps = longestpalindromicsubstring.(trypticsequences)
     palindromelengths = (x::Tuple{Int, Int} -> x[2]-x[1]).(lps)
@@ -40,11 +52,51 @@ function trypticpalindromedistribution!(
     end
 end
 
-function trypticpalindromedistribution!(distribution::Matrix{Int}, seqs::Vector, minlength::Int, maxlength::Int)
+function trypticpalindromedistribution!(
+    distribution::Matrix{Int}, 
+    seqs::Vector, 
+    minlength::Int, 
+    maxlength::Int
+)
     nseqs = length(seqs)
     p = Progress(nseqs, 1, "Digesting...")
     @threads for i=1:nseqs
         trypticpalindromedistribution!(distribution, seqs[i], minlength, maxlength)
+        next!(p)
+    end
+end
+
+function shuffledtrypticpalindromedistribution!(
+    distribution::Matrix{Int}, 
+    seq::AbstractString, 
+    minlength::Int, 
+    maxlength::Int
+)
+    global maxti
+    trypticintervals = trypticpeptides(seq, minlength, maxlength)
+    if length(trypticintervals) > maxti
+        maxti = length(trypticintervals)
+        println(maxti)
+    end
+    trypticsequences = (seq[start:stop] for (start, stop)=trypticintervals)
+    lps = longestpalindromicsubstring.(shufflefast.(trypticsequences))
+    palindromelengths = (x::Tuple{Int, Int} -> x[2]-x[1]).(lps)
+    seq_length = length(seq)
+    for pal_length=palindromelengths
+        distribution[seq_length, pal_length] += 1
+    end
+end
+
+function shuffledtrypticpalindromedistribution!(
+    distribution::Matrix{Int}, 
+    seqs::Vector, 
+    minlength::Int, 
+    maxlength::Int
+)
+    nseqs = length(seqs)
+    p = Progress(nseqs, 1, "Digesting...")
+    @threads for i=1:nseqs
+        shuffledtrypticpalindromedistribution!(distribution, seqs[i], minlength, maxlength)
         next!(p)
     end
 end
