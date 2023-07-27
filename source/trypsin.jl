@@ -1,4 +1,5 @@
 trypsin_cleave_locations(q::AbstractString) = [i for i=1:length(q) if Char(q[i]) == 'K' || Char(q[i]) == 'R']
+
 function nested_subintervals(locii::Vector{Int}, minlength::Int, maxlength::Int)
     intervals = Tuple{Int, Int}[]
     for x=1:length(locii)-1
@@ -19,4 +20,32 @@ function nested_subintervals(locii::Vector{Int}, minlength::Int, maxlength::Int)
     end
     intervals
 end
+
 trypticpeptides(q::AbstractString, minlength::Int, maxlength::Int) = nested_subintervals(trypsin_cleave_locations(q), minlength, maxlength)
+
+function trypticpalindromedistribution!(
+    distribution::Matrix{Int}, 
+    seq::AbstractString, 
+    minlength::Int, 
+    maxlength::Int
+)
+    trypticintervals = trypticpeptides(seq, minlength, maxlength)
+    trypticsequences = view.(seq, (start:stop for (start, stop)=trypticintervals))
+    lps = longestpalindromicsubstring.(trypticsequences)
+    palindromelengths = (x::Tuple{Int, Int} -> x[2]-x[1]).(lps)
+    seq_length = length(seq)
+    for pal_length=palindromelengths
+        distribution[seq_length, pal_length] += 1
+    end
+end
+
+function trypticpalindromedistribution!(distribution::Matrix{Int}, seqs::Vector, minlength::Int, maxlength::Int)
+    minlength = 5
+    maxlength = 100
+    nsequences = length(sequences)
+    p = Progress(nsequences, 1, "Digesting...")
+    @threads for i=1:nsequences
+        trypticpalindromedistribution!(distribution, sequences[i], minlength, maxlength)
+        next!(p)
+    end
+end
