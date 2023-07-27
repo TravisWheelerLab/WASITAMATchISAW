@@ -30,6 +30,7 @@ function trypticpalindromedistribution!(
     maxlength::Int
 )
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
+    println(length(trypticintervals))
     trypticsequences = view.(seq, (start:stop for (start, stop)=trypticintervals))
     lps = longestpalindromicsubstring.(trypticsequences)
     palindromelengths = (x::Tuple{Int, Int} -> x[2]-x[1]).(lps)
@@ -40,12 +41,10 @@ function trypticpalindromedistribution!(
 end
 
 function trypticpalindromedistribution!(distribution::Matrix{Int}, seqs::Vector, minlength::Int, maxlength::Int)
-    minlength = 5
-    maxlength = 100
-    nsequences = length(sequences)
-    p = Progress(nsequences, 1, "Digesting...")
-    @threads for i=1:nsequences
-        trypticpalindromedistribution!(distribution, sequences[i], minlength, maxlength)
+    nseqs = length(seqs)
+    p = Progress(nseqs, 1, "Digesting...")
+    @threads for i=1:nseqs
+        trypticpalindromedistribution!(distribution, seqs[i], minlength, maxlength)
         next!(p)
     end
 end
