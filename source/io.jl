@@ -1,5 +1,6 @@
 using FASTX: FASTAReader
-using DataFrames: DataFrame
+using DataFrames: DataFrame, dropmissing
+using CSV: File
 
 function readfasta(
     pathtorecord::AbstractString;
@@ -24,8 +25,8 @@ function loadchromosome(pathtorecord)
     record = readfasta(pathtorecord, singleton=true)
     metadata, sequence = split(string(record), '\n')
     gnav = split(metadata, ' ')[1][2:end]
-    Chromosome(record, sequence, gnav, metadata)
+    NCBINucleotideChromosome(record, sequence, gnav, metadata)
  end
 
 "load a chromosome annotation file in the NCBI tabular format."
-loadannotation(pathtoannotation) = Annotation(dropmissing(DataFrame(File(pathtoannotation))[:, [STARTPOS, ENDPOS, GNAV]]))sech
+loadannotation(pathtoannotation) = NCBIGeneAnnotation(dropmissing(DataFrame(File(pathtoannotation))[:, [STARTPOS, ENDPOS, GNAV]]))

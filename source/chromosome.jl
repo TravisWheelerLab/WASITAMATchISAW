@@ -1,23 +1,22 @@
-module NCBI
-
-export Chromosome, record, sequence, gnav
-export Annotation, gnav, frames, segment, regions, annotate
-
 using DataFrames: DataFrame, dropmissing
 using FASTX: FASTARecord
 
-struct Chromosome
+abstract type Chromosome end
+
+struct NCBINucleotideChromosome <: Chromosome
     record::FASTARecord
     sequence::AbstractString
     gnav::AbstractString
     _metadata::AbstractString
 end
 
-record(chromosome::Chromosome) = chromosome.record
-sequence(chromosome::Chromosome) = chromosome.sequence
-gnav(chromosome::Chromosome) = chromosome.gnav
+record(chromosome::NCBINucleotideChromosome) = chromosome.record
+sequence(chromosome::NCBINucleotideChromosome) = chromosome.sequence
+gnav(chromosome::NCBINucleotideChromosome) = chromosome.gnav
 
-struct Annotation
+abstract type Annotation end
+
+struct NCBIGeneAnnotation <: Annotation 
     table::DataFrame
 end
 
@@ -25,24 +24,27 @@ STARTPOS = "start_position_on_the_genomic_accession"
 ENDPOS = "end_position_on_the_genomic_accession"
 GNAV = "genomic_nucleotide_accession.version"
 
-gnav(annotation::Annotation) = annotation[:, GNAV]
+Base.length(annotation::NCBIGeneAnnotation) = size(annotation.table)[1]
 
-"extract the frames from an NCBI chromosome annotation as a vector of (startpos, endpos) tuples."
-frames(annotation::Annotation) = eachrow(annotation.table[:, [STARTPOS, ENDPOS]])
+gnav(annotation::NCBIGeneAnnotation) = annotation.table[:, GNAV]
 
-segment(sequence, intervals::Vector{NTuple{2, Int}}) = [sequence[start:stop] for (start, stop) in intervals]
+frame_starts(annotation::NCBIGeneAnnotation) = annotation.table[:, STARTPOS]
 
-"extract regions in chromosome sequence using the frames from an NCBI annotation."
-regions(chromosome::Chromosome, annotation::Annotation) = segment(sequence(chromosome), frames(annotation))
+frame_ends(annotation::NCBIGeneAnnotation) = annotation.table[:, ENDPOS]
 
-""
-function annotate(chromosome::Chromosome, annotation::Annotation)
+"lazily iterates the substrings of `chromosome` induced by the intervals of `annotation`"
+function annotate(
+	chromosome::NCBINucleotideChromosome,
+	annotation::NCBIGeneAnnotation,
+)
 	errors = gnav(annotation) .!= gnav(chromosome)
 	if any(errors)
 	    rate = sum(errors) / length(errors)
-		@warn "the chromosome accession does not match the accession version of $(rate) annotated regions."
+		@warn "the chromosome accession does not match the accession version of $(100 * rate)% annotated regions."
 	end
-	regions(chromosome, annotation)	
-end
-
+	nframes = length(annotation)
+	start = frame_starts(annotation)
+	stop = frame_ends(annotation)
+	seq = sequence(chromosome)
+	(view(seq, start[i]:stop[i]) for i=1:nframes)
 end
