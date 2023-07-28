@@ -83,7 +83,7 @@ function _naïve(
     augmentedargmax = argmax(radii)
     maxradii = radii[augmentedargmax]
     leftbound = floor(Int, augmentedargmax / 2) - floor(Int, maxradii / 2)
-    rightbound = leftbound + maxradii
+    rightbound = leftbound + maxradii - 1
     leftbound, rightbound
 end
 
