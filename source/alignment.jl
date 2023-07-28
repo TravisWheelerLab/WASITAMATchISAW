@@ -1,6 +1,6 @@
 using Base.Iterators: Stateful, popfirst!, repeated
 using Base.Threads: @threads
-using BioAlignments: PairwiseAlignmentResult, LocalAlignment, AffineGapScoreModel, BLOSUM62, pairalign
+using BioAlignments: score, PairwiseAlignmentResult, LocalAlignment, AffineGapScoreModel, BLOSUM62, pairalign
 using ProgressMeter: Progress, next!, @showprogress
 
 function _align(
@@ -18,7 +18,7 @@ function _align(
     results = Vector{result_type}(undef, n)
     # create a progress bar
     if verbose
-        p = Progress(n, 0.1, "Aligning...")
+        p = Progress(n, 1, "Aligning...")
     end
     # do the thing
     pairgenerator = Stateful(pairs)
@@ -26,7 +26,7 @@ function _align(
         (query, reference) = popfirst!(pairgenerator)
         res = pairalign(model, query, reference, schema)
         results[i] = formatter(res)
-        if verbose
+        if verbose# && (i % (floor(Int, n / 100)) == 0)
             next!(p)
         end
     end
@@ -79,10 +79,9 @@ function align(
     n = length(queries)
     m = length(references)
     result_type = Union{Base.return_types(formatter)...}
-    # create a place for each result
     results = Vector{result_type}(undef, n*m)
     if verbose
-        p = Progress(n, 0.1, "Aligning...")
+        p = Progress(n, 1, "Aligning...")
     end
     for i=1:n
         results[1+(i-1)*m:i*m] = align(
