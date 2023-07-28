@@ -9,7 +9,7 @@ function longestpalindromicsubstring(
     if length(sequence) == 0
         return nothing, nothing
     elseif length(sequence) == 1
-        return 0, 1
+        return 1, 1
     else
         if mode == :naive
             return _naïve(sequence)
@@ -82,7 +82,7 @@ function _naïve(
     radii = palindromeradii(sequence)
     augmentedargmax = argmax(radii)
     maxradii = radii[augmentedargmax]
-    leftbound = floor(Int, augmentedargmax / 2) - floor(Int, maxradii / 2)
+    leftbound = ceil(Int, augmentedargmax / 2) - floor(Int, maxradii / 2)
     rightbound = leftbound + maxradii - 1
     leftbound, rightbound
 end
