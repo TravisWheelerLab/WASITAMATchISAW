@@ -1,3 +1,5 @@
+interval_length(interval::Tuple{Int, Int}) = 1 + interval[2] - interval[1] 
+
 function polysplit(
     str::AbstractString,
     delimiters::Union{AbstractVector, Tuple}

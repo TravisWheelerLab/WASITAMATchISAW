@@ -2,6 +2,7 @@ using Random: shuffle, shuffle!
 
 trypsin_cleave_locations(q::AbstractString) = [i for i=1:length(q) if Char(q[i]) == 'K' || Char(q[i]) == 'R']
 
+# TODO - lazy implementation. maybe there's a functional expression?
 function nested_subintervals(
     locii::Vector{Int}, 
     minlength::Int, 
@@ -36,12 +37,13 @@ function trypticpalindromedistribution!(
     maxlength::Int
 )
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
+    trypticlengths = interval_length.(trypticintervals)
+    ntryptics = length(trypticintervals)
     trypticsequences = view.(seq, (start:stop for (start, stop)=trypticintervals))
     lps = longestpalindromicsubstring.(trypticsequences)
-    palindromelengths = (x::Tuple{Int, Int} -> x[2]-x[1]).(lps)
-    seq_length = length(seq)
-    for pal_length=palindromelengths
-        distribution[seq_length, pal_length] += 1
+    palindromelengths = interval_length.(lps)
+    for i=1:ntryptics
+        distribution[trypticlengths[i], palindromelengths[i]] += 1
     end
 end
 
@@ -66,12 +68,13 @@ function shuffledtrypticpalindromedistribution!(
     maxlength::Int
 )
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
+    trypticlengths = interval_length.(trypticintervals)
+    ntryptics = length(trypticintervals)
     trypticsequences = (seq[start:stop] for (start, stop)=trypticintervals)
     lps = longestpalindromicsubstring.(shufflefast.(trypticsequences))
-    palindromelengths = (x::Tuple{Int, Int} -> x[2]-x[1]).(lps)
-    seq_length = length(seq)
-    for pal_length=palindromelengths
-        distribution[seq_length, pal_length] += 1
+    palindromelengths = interval_length.(lps)
+    for i=1:ntryptics
+        distribution[trypticlengths[i], palindromelengths[i]] += 1
     end
 end
 
