@@ -1,5 +1,8 @@
 interval_length(interval::Tuple{Int, Int}) = 1 + interval[2] - interval[1] 
 
+# https://stackoverflow.com/questions/36367482/unzip-an-array-of-tuples-in-julia
+unzip(a) = map(x->getfield.(a, x), fieldnames(eltype(a)))
+
 function polysplit(
     str::AbstractString,
     delimiters::Union{AbstractVector, Tuple}

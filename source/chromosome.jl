@@ -26,11 +26,9 @@ GNAV = "genomic_nucleotide_accession.version"
 
 Base.length(annotation::NCBIGeneAnnotation) = size(annotation.table)[1]
 
+startpos(annotation::NCBIGeneAnnotation) = annotation.table[:, STARTPOS]
+endpos(annotation::NCBIGeneAnnotation) = annotation.table[:, ENDPOS]
 gnav(annotation::NCBIGeneAnnotation) = annotation.table[:, GNAV]
-
-frame_starts(annotation::NCBIGeneAnnotation) = annotation.table[:, STARTPOS]
-
-frame_ends(annotation::NCBIGeneAnnotation) = annotation.table[:, ENDPOS]
 
 "lazily iterates the substrings of `chromosome` induced by the intervals of `annotation`"
 function annotate(
@@ -42,9 +40,9 @@ function annotate(
 	    rate = sum(errors) / length(errors)
 		@warn "the chromosome accession does not match the accession version of $(100 * rate)% annotated regions."
 	end
-	nframes = length(annotation)
-	start = frame_starts(annotation)
-	stop = frame_ends(annotation)
 	seq = sequence(chromosome)
+	start = startpos(annotation)
+	stop = endpos(annotation)
+	nframes = length(annotation)
 	(view(seq, start[i]:stop[i]) for i=1:nframes)
 end
