@@ -19,12 +19,15 @@ chromosome = loadchromosome(pathchromosome)
 annotation = loadannotation(pathannotation)
 
 frames = annotate(chromosome, annotation)
+frames = replace.(frames, "N"=>"")
+frames = [f for f=frames if length(f) > 0]
 framelengths = length.(frames)
 println(reduce(min, framelengths))
 println(reduce(max, framelengths))
 if doshuffle
     frames = shufflefast.(frames)
 end
+
 
 if mode == "lps"
     lps = longestpalindromicsubstring.(frames)
