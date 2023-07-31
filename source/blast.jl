@@ -8,7 +8,7 @@ module BLAST
         pathtomaskdb::String="",
         numthreads::Int=1,
     )
-        command = "blastp -query $(pathtoqueryseq) -db $(pathtotargetdb) -word_size 4 -outfmt 7 -num_threads $(numthreads)"
+        command = "blastp -query $(pathtoqueryseq) -db $(pathtotargetdb) -word_size 4 -outfmt \"6 evalue score length qstart qend sstart send pctid\" -num_threads $(numthreads)"
         if length(pathtomaskdb) > 0
             command *= "-commanddb_hard_mask 100"
         end
