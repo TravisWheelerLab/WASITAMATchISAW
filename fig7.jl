@@ -13,11 +13,7 @@ pathinput = ARGS[1]
 pathoutput = ARGS[2]
 minlength = parse(Int, ARGS[3])
 maxlength = parse(Int, ARGS[4])
-if length(ARGS) > 4
-    mode = ARGS[5]
-else
-    mode = "-"
-end
+doshuffle = "s" in ARGS
 
 records = readfasta(pathinput)
 
@@ -26,12 +22,10 @@ shuffle!(sequences)
 longestsequence = reduce(max, length.(sequences))
 
 distribution = zeros(Int, (maxlength, maxlength))
-if mode == "-"
+if !doshuffle
     trypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
-elseif mode == "s"
-    shuffledtrypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
 else
-    @warn "unrecognized mode argument. the output matrix is blank."
+    shuffledtrypticpalindromedistribution!(distribution, sequences, minlength, maxlength)
 end
 
 writedlm(pathoutput, distribution)
