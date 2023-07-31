@@ -13,7 +13,7 @@ pathchromosome = ARGS[1] # data/ncbi_chr22_sequence.fasta
 pathannotation = ARGS[2] # data/ncbi_chr22_protein.txt, data/ncbi_chr22_rna.txt, data/ncbi_chr22_pseudo.txt
 pathoutput = ARGS[3] # outputs/...
 mode = ARGS[4]
-doshuffle = "s" in ARGS
+doshuffle = "shuffle" in ARGS
 
 chromosome = loadchromosome(pathchromosome)
 annotation = loadannotation(pathannotation)
@@ -25,7 +25,10 @@ framelengths = length.(frames)
 println(reduce(min, framelengths))
 println(reduce(max, framelengths))
 if doshuffle
+    println("shuffing")
+    println("before...", frames[argmin(framelengths)])
     frames = shufflefast.(frames)
+    println("after...", frames[argmin(framelengths)])
 end
 
 
