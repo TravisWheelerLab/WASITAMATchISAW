@@ -18,6 +18,7 @@ doshuffle = "s" in ARGS
 records = readfasta(pathinput)
 
 sequences = [seq for seq=sequence.(records) if 50 < length(seq) < 2000]
+sequences = replace.(sequences, "X"=>"")
 shuffle!(sequences)
 longestsequence = reduce(max, length.(sequences))
 
