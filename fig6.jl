@@ -13,7 +13,7 @@ pathchromosome = ARGS[1] # data/ncbi_chr22_sequence.fasta
 pathannotation = ARGS[2] # data/ncbi_chr22_protein.txt, data/ncbi_chr22_rna.txt, data/ncbi_chr22_pseudo.txt
 pathoutput = ARGS[3] # outputs/...
 mode = ARGS[4]
-doshuffle = "shuffle" in ARGS
+doshuffle = "shuf" in ARGS
 
 chromosome = loadchromosome(pathchromosome)
 annotation = loadannotation(pathannotation)

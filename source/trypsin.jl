@@ -1,9 +1,16 @@
 using Random: shuffle, shuffle!
+using Base.Threads: @threads
 
 trypsin_cleave_locations(q::AbstractString) = [i for i=1:length(q) if Char(q[i]) == 'K' || Char(q[i]) == 'R']
 
+isproline(c::Char) = c == 'P'
+
 # TODO - lazy implementation. maybe there's a functional expression?
-function nested_subintervals(
+"""
+# sample all right bounded half open intervals [START, stop) for all 
+# start, stop ∈ `locii` such that start < stop.
+"""
+function rightbounded_halfopen_subintervals(
     locii::Vector{Int}, 
     minlength::Int, 
     maxlength::Int
@@ -13,14 +20,16 @@ function nested_subintervals(
         start = -1
         stop = -1
         for i=x:length(locii)-1
+            # the left bound is closed 
             start = locii[i]
             for j=i+1:length(locii)-1
-                stop = locii[j]
-                interval_length = stop - start
-                if minlength < interval_length < maxlength
-                    push!(intervals, (start, stop))
-                elseif interval_length > maxlength
+                # the right bound is open
+                stop = locii[j] - 1
+                irvlength = interval_length((start, stop))
+                if irvlength > maxlength
                     break
+                elseif minlength <= irvlength # <= maxlength 
+                    push!(intervals, (start, stop))
                 end
             end
         end
@@ -28,7 +37,16 @@ function nested_subintervals(
     intervals
 end
 
-trypticpeptides(q::AbstractString, minlength::Int, maxlength::Int) = nested_subintervals(trypsin_cleave_locations(q), minlength, maxlength)
+function trypticpeptides(
+    q::AbstractString,
+    minlength::Int,
+    maxlength::Int
+)
+    locii = trypsin_cleave_locations(q)
+    proline = isproline.(collect(q))
+    cleavable_locii = filter(i -> i==1 ? true : !proline[i-1], locii)
+    rightbounded_halfopen_subintervals(cleavable_locii, minlength, maxlength)
+end
 
 function trypticpalindromedistribution!(
     distribution::Matrix{Int}, 
@@ -61,7 +79,7 @@ function trypticpalindromedistribution!(
     end
 end
 
-function shuffledtrypticpalindromedistribution!(
+function permutedtrypticpalindromedistribution!(
     distribution::Matrix{Int}, 
     seq::AbstractString, 
     minlength::Int, 
@@ -78,7 +96,7 @@ function shuffledtrypticpalindromedistribution!(
     end
 end
 
-function shuffledtrypticpalindromedistribution!(
+function permutedtrypticpalindromedistribution!(
     distribution::Matrix{Int}, 
     seqs::Vector, 
     minlength::Int, 
@@ -87,7 +105,7 @@ function shuffledtrypticpalindromedistribution!(
     nseqs = length(seqs)
     p = Progress(nseqs, 1, "Digesting...")
     @threads for i=1:nseqs
-        shuffledtrypticpalindromedistribution!(distribution, seqs[i], minlength, maxlength)
+        permutedtrypticpalindromedistribution!(distribution, seqs[i], minlength, maxlength)
         next!(p)
     end
 end
