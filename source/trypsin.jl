@@ -56,11 +56,11 @@ function trypticpalindromedistribution!(
 )
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
     trypticlengths = interval_length.(trypticintervals)
-    ntryptics = length(trypticintervals)
-    trypticsequences = view.(seq, (start:stop for (start, stop)=trypticintervals))
-    lps = longestpalindromicsubstring.(trypticsequences)
-    palindromelengths = interval_length.(lps)
-    for i=1:ntryptics
+    n = length(trypticintervals)
+    palindromelengths = interval_length.(
+                            longestpalindromicsubstring.(
+                                view.(seq, (x->x[1]:x[2]).(trypticintervals))))
+    for i=1:n
         distribution[trypticlengths[i], palindromelengths[i]] += 1
     end
 end
@@ -87,11 +87,12 @@ function permutedtrypticpalindromedistribution!(
 )
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
     trypticlengths = interval_length.(trypticintervals)
-    ntryptics = length(trypticintervals)
-    trypticsequences = (seq[start:stop] for (start, stop)=trypticintervals)
-    lps = longestpalindromicsubstring.(shufflefast.(trypticsequences))
-    palindromelengths = interval_length.(lps)
-    for i=1:ntryptics
+    n = length(trypticintervals)
+    palindromelengths = interval_length.(
+                            longestpalindromicsubstring.(
+                                shufflefast.(
+                                    view.(seq, (x->x[1]:x[2]).(trypticintervals)))))
+    for i=1:n
         distribution[trypticlengths[i], palindromelengths[i]] += 1
     end
 end
