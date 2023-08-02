@@ -15,26 +15,9 @@ function rightbounded_halfopen_subintervals(
     minlength::Int, 
     maxlength::Int
 )
-    intervals = Tuple{Int, Int}[]
-    for x=1:length(locii)-1
-        start = -1
-        stop = -1
-        for i=x:length(locii)-1
-            # the left bound is closed 
-            start = locii[i]
-            for j=i+1:length(locii)-1
-                # the right bound is open
-                stop = locii[j] - 1
-                irvlength = interval_length((start, stop))
-                if irvlength > maxlength
-                    break
-                elseif minlength <= irvlength # <= maxlength 
-                    push!(intervals, (start, stop))
-                end
-            end
-        end
-    end
-    intervals
+    n = length(locii)
+    inbounds(a::Int, b::Int) = minlength <= interval_length((a, b)) <= maxlength
+    [(locii[i], locii[j]-1) for i=1:n for j=i+1:n if inbounds(locii[i], locii[j]-1)]
 end
 
 function trypticpeptides(
@@ -57,9 +40,9 @@ function trypticpalindromedistribution!(
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
     trypticlengths = interval_length.(trypticintervals)
     n = length(trypticintervals)
-    palindromelengths = interval_length.(
-                            longestpalindromicsubstring.(
-                                view.(seq, (x->x[1]:x[2]).(trypticintervals))))
+    lazy_lps = (longestpalindromicsubstring(seq[start:stop]) 
+                for (start,stop)=trypticintervals)
+    palindromelengths = interval_length.(lazy_lps)
     for i=1:n
         distribution[trypticlengths[i], palindromelengths[i]] += 1
     end
@@ -88,10 +71,9 @@ function permutedtrypticpalindromedistribution!(
     trypticintervals = trypticpeptides(seq, minlength, maxlength)
     trypticlengths = interval_length.(trypticintervals)
     n = length(trypticintervals)
-    palindromelengths = interval_length.(
-                            longestpalindromicsubstring.(
-                                shufflefast.(
-                                    view.(seq, (x->x[1]:x[2]).(trypticintervals)))))
+    lazy_lps = (longestpalindromicsubstring(shufflefast(seq[start:stop])) 
+                for (start,stop)=trypticintervals)
+    palindromelengths = interval_length.(lazy_lps)
     for i=1:n
         distribution[trypticlengths[i], palindromelengths[i]] += 1
     end
