@@ -1,6 +1,7 @@
-using FASTX: FASTAReader
+using FASTX: FASTAReader, FASTARecord, FASTAWriter
 using DataFrames: DataFrame, dropmissing
 using CSV: File
+using DelimitedFiles: readdlm, writedlm
 
 function readfasta(
     pathtorecord::AbstractString;
@@ -14,10 +15,37 @@ function readfasta(
     end
 end
 
+function writefasta(
+    pathtorecord::AbstractString,
+    records::Vector{FASTARecord};
+    singleton=false,
+)
+    FASTAWriter(open(pathtorecord, "w")) do writer
+        for record=records
+            write(writer, record)
+        end
+    end
+end
+
+function writefasta(
+    pathtorecord::AbstractString,
+    sequence::AbstractString;
+    description="",
+)
+    writefasta(pathtorecord, [FASTARecord(description, sequence)])
+end
+
 function readtable(
     pathtotable::AbstractString,
 )
     readdlm(pathtotable, '\t', Any, '\n')
+end
+
+function readtable(
+    pathtotable::AbstractString,
+    columns::AbstractVector
+)
+    return DataFrame(readtable(pathtotable), columns)
 end
 
 "load chromosome record from a .fasta."

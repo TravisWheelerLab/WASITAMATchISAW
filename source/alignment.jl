@@ -1,6 +1,6 @@
 using Base.Iterators: Stateful, popfirst!, repeated
 using Base.Threads: @threads
-using BioAlignments: score, PairwiseAlignmentResult, LocalAlignment, AffineGapScoreModel, BLOSUM62, pairalign
+using BioAlignments: score, PairwiseAlignmentResult, LocalAlignment, GlobalAlignment, AffineGapScoreModel, BLOSUM62, pairalign
 using ProgressMeter: Progress, next!, @showprogress
 
 function _align(

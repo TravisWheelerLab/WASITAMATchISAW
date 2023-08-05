@@ -1,4 +1,4 @@
-using BioAlignments: PairwiseAlignmentResult
+using BioAlignments: PairwiseAlignmentResult, alignment, cigar
 
 OPCHRS = ('M', '=', 'X', 'I', 'D', 'N')
 
@@ -11,7 +11,7 @@ function parsecigar(
     cigar::AbstractString;
 )
     operatorstrings = polysplit(cigar, OPCHRS)
-    n = length(operator_strings)
+    n = length(operatorstrings)
     operatornums = Vector{Int}(undef, n)
     operatorchrs = Vector{Char}(undef, n)
     for i=1:n
@@ -44,7 +44,7 @@ function percentid(
 )
     match = ismatch.(operatorchrs)
     nmatch = sum(match .* operatornums)
-    mismatch = is_mismatch.(operatorchrs)
+    mismatch = ismismatch.(operatorchrs)
     nmismatch = sum(mismatch .* operatornums)
     nmatch / (nmismatch + nmatch)
 end
