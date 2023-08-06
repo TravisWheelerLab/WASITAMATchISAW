@@ -43,10 +43,42 @@ end
 
 function readtable(
     pathtotable::AbstractString,
-    columns::AbstractVector
+    columns::AbstractVector,
 )
     return DataFrame(readtable(pathtotable), columns)
 end
+
+function writeframe(
+    pathtoframe::AbstractString,
+    frame::DataFrame,
+)
+    CSV.write(open(pathtoframe, "w"), frame)
+end
+
+function readframe(
+    pathtoframe::AbstractString
+)
+    DataFrame(File(pathtoframe))
+end
+
+function readscopclass(
+    pathtoscopclass::AbstractString
+)
+    scoptxt = readlines(open(pathtoscopclass))
+    columns = split(scoptxt[6], ' ')[2:end]
+    scopmatrix = permutedims(reduce(hcat, split.(scoptxt[7:end])))
+    scopcla = Tuple.(split.(scopmatrix[:, end], ','))
+    scopcla = unzip(scopcla)
+    scopcla = (x -> (y -> y[4:end]).(x)).(scopcla)
+    scoptable = DataFrame(scopmatrix, columns)
+    scoptable."TP" = scopcla[1]
+    scoptable."CL" = scopcla[2]
+    scoptable."CF" = scopcla[3]
+    scoptable."SF" = scopcla[4]
+    scoptable."FA" = scopcla[5]
+    return scoptable
+end
+
 
 "load chromosome record from a .fasta."
 function loadchromosome(pathtorecord)
