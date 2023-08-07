@@ -1,6 +1,6 @@
 using FASTX: FASTAReader, FASTARecord, FASTAWriter
 using DataFrames: DataFrame, dropmissing
-using CSV: File
+using CSV
 using DelimitedFiles: readdlm, writedlm
 
 function readfasta(
@@ -29,10 +29,17 @@ end
 
 function writefasta(
     pathtorecord::AbstractString,
+    record::FASTARecord,
+)
+    writefasta(pathtorecord, [record])
+end
+
+function writefasta(
+    pathtorecord::AbstractString,
     sequence::AbstractString;
     description="",
 )
-    writefasta(pathtorecord, [FASTARecord(description, sequence)])
+    writefasta(pathtorecord, FASTARecord(description, sequence))
 end
 
 function readtable(
@@ -58,7 +65,7 @@ end
 function readframe(
     pathtoframe::AbstractString
 )
-    DataFrame(File(pathtoframe))
+    DataFrame(CSV.File(pathtoframe))
 end
 
 function readscopclass(
@@ -67,10 +74,10 @@ function readscopclass(
     scoptxt = readlines(open(pathtoscopclass))
     columns = split(scoptxt[6], ' ')[2:end]
     scopmatrix = permutedims(reduce(hcat, split.(scoptxt[7:end])))
+    scoptable = DataFrame(scopmatrix, columns)
     scopcla = Tuple.(split.(scopmatrix[:, end], ','))
     scopcla = unzip(scopcla)
     scopcla = (x -> (y -> y[4:end]).(x)).(scopcla)
-    scoptable = DataFrame(scopmatrix, columns)
     scoptable."TP" = scopcla[1]
     scoptable."CL" = scopcla[2]
     scoptable."CF" = scopcla[3]

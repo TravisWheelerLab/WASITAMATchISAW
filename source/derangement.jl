@@ -106,7 +106,7 @@ function derangement(
             if length(nonemptyclusters) == 1 && elements_by_cluster[i] == nonemptyclusters[1]
                 # there is only one non-empty cluster remaining, so pairing cannot proceed.
                 # if one cluster contains more than 50%, pairing will always fail!
-                @warn "depletion occurred after $(i)/$(nelements) iterations"
+                @warn "depletion occurred after $(i)/$(nelements) iterations. try re-running with weighted=true"
                 break
             end
             # retrieve the cluster of the element
