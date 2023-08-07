@@ -63,7 +63,7 @@ function individuate(
     mkdir(pathtorecord_dir)
     # iterate records by their index and write each to the directory
     for i=1:length(records)
-        pathtorecord_file = namerecord(pathtorecord_dir, i)
+        pathtorecord_file = namerecord_file(pathtorecord_dir, i)
         writefasta(pathtorecord_file, records[i])
     end
     pathtorecord_dir
@@ -74,5 +74,9 @@ function cleanup_individuate(
     pathdlm='/',
 )
     pathtorecord_dir = namerecord_dir(pathtorecord, pathdlm=pathdlm)
-    rm(pathtorecord_dir, recursive=true)
+    try
+        rm(pathtorecord_dir, recursive=true)
+    catch e
+        ;
+    end
 end

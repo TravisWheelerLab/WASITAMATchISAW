@@ -82,14 +82,23 @@ end
 function search(
     ::Pairwise,
     pathtoquery, 
-    pathtoreference; 
-    wd::AbstractString=pwd(),
+    pathtoreference;
     pathdlm='/',
+    verbose=false,
+    careful=false,
 )
+    if careful
+        cleanup_individuate(pathtoquery)
+        cleanup_individuate(pathtoreference)
+    end
     query_dir = individuate(pathtoquery, pathdlm=pathdlm)
     reference_dir = individuate(pathtoreference, pathdlm=pathdlm)
     n = length(readdir(query_dir))
     result = Vector{String}(undef, n)
+    p = Progress(n)
+    if verbose
+        println("pairwise BLAST on $n sequence pairs\nquery $pathtoquery\nreference $pathtoreference")
+    end
     try
         Base.Threads.@threads for i=1:n
             query_file = namerecord_file(query_dir, i)
@@ -98,6 +107,9 @@ function search(
             makeblastdb(reference_file, reference_db)
             result[i] = blastp(query_file, reference_db; numthreads=1)
             cleanup_makeblastdb(reference_db)
+            if verbose
+                next!(p)
+            end
         end
     catch e
         println(e)
