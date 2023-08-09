@@ -1,3 +1,5 @@
+using Distributed
+
 execute(command::String) = read(Cmd(String.(split(command, ' '))), String)
 
 function blastp(
@@ -78,7 +80,7 @@ function cleanup_convert2blastmask(
         end
     end
 end
-    
+
 function search(
     ::Pairwise,
     pathtoquery, 
@@ -86,6 +88,7 @@ function search(
     pathdlm='/',
     verbose=false,
     careful=false,
+    ntasks=1,
 )
     if careful
         cleanup_individuate(pathtoquery)
@@ -95,26 +98,36 @@ function search(
     reference_dir = individuate(pathtoreference, pathdlm=pathdlm)
     n = length(readdir(query_dir))
     result = Vector{String}(undef, n)
-    p = Progress(n)
+    p = Progress(n, 1)
     if verbose
         println("pairwise BLAST on $n sequence pairs\nquery $pathtoquery\nreference $pathtoreference")
     end
-    try
-        Base.Threads.@threads for i=1:n
-            query_file = namerecord_file(query_dir, i)
-            reference_file = namerecord_file(reference_dir, i)
-            reference_db = reference_dir * string(i)
-            makeblastdb(reference_file, reference_db)
-            result[i] = blastp(query_file, reference_db; numthreads=1)
-            cleanup_makeblastdb(reference_db)
-            if verbose
-                next!(p)
+    nchunk = ceil(Int, n / ntasks)
+    # thanks, tkf.
+    # https://discourse.julialang.org/t/how-to-launch-several-run-cmd-in-parallel/68862/3
+    @sync for tasknum=1:ntasks
+        @async try
+            for k=1:nchunk
+                i = ((k-1)*ntasks)+tasknum
+                if i > n
+                    println("task $tasknum terminated.")
+                    break
+                end
+                query_file = namerecord_file(query_dir, i)
+                reference_file = namerecord_file(reference_dir, i)
+                reference_db = reference_dir * string(i)
+                makeblastdb(reference_file, reference_db)
+                result[i] = blastp(query_file, reference_db; numthreads=1)
+                cleanup_makeblastdb(reference_db)
+                if verbose
+                    next!(p)
+                end
             end
+        catch e
+            println(e)
         end
-    catch e
-        println(e)
     end
     cleanup_individuate(pathtoquery, pathdlm=pathdlm)
     cleanup_individuate(pathtoreference, pathdlm=pathdlm)
-    result
+    result, complete
 end
