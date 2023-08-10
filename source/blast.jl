@@ -2,6 +2,9 @@ using Distributed
 
 execute(command::String) = read(Cmd(String.(split(command, ' '))), String)
 
+const BLASTP_OUTFMT = "6 score evalue qseqid qstart qend sseqid sstart send"
+const BLASTP_COLUMNS = split(BLASTP_OUTFMT, ' ')[2:end]
+
 function blastp(
     pathtoqueryseq::String,
     pathtotargetdb::String;
@@ -9,12 +12,35 @@ function blastp(
     numthreads::Int=1,
 )   
     if length(pathtomaskdb) == 0
-        command = `blastp -query $pathtoqueryseq -db $pathtotargetdb -word_size 4 -outfmt "6 score evalue qseqid qstart qend sseqid sstart send" -num_threads $numthreads`
+        command = `blastp -query $pathtoqueryseq -db $pathtotargetdb -word_size 4 -outfmt $BLASTP_OUTFMT -num_threads $numthreads`
     else
-        command = `blastp -query $pathtoqueryseq -db $pathtotargetdb -word_size 4 -outfmt "6 score evalue qseqid qstart qend sseqid sstart send" -num_threads $numthreads -db_hard_mask 100`
+        command = `blastp -query $pathtoqueryseq -db $pathtotargetdb -word_size 4 -outfmt $BLASTP_OUTFMT -num_threads $numthreads -db_hard_mask 100`
     end
     read(command, String)
 end
+
+function parse_blastp(
+    result::AbstractString;
+)
+    if result == ""
+        return zeros((0, length(BLASTP_COLUMNS)))
+    else
+        try
+            return readdlm(IOBuffer(result))
+        catch e
+            print(e)
+            print("RESULT ", result)
+        end
+    end
+    
+end
+
+function parse_blastp(
+    results::AbstractVector
+)
+    reduce(vcat, parse_blastp.(results))
+end
+
 
 # TODO
 function blastn()
@@ -110,8 +136,10 @@ function search(
             for k=1:nchunk
                 i = ((k-1)*ntasks)+tasknum
                 if i > n
-                    println("task $tasknum terminated.")
-                    break
+                    if verbose
+                        println("task $tasknum stalled")
+                    end
+                    continue
                 end
                 query_file = namerecord_file(query_dir, i)
                 reference_file = namerecord_file(reference_dir, i)
