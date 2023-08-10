@@ -129,5 +129,5 @@ function search(
     end
     cleanup_individuate(pathtoquery, pathdlm=pathdlm)
     cleanup_individuate(pathtoreference, pathdlm=pathdlm)
-    result, complete
+    result
 end
