@@ -123,7 +123,7 @@ function search(
     query_dir = individuate(pathtoquery, pathdlm=pathdlm)
     reference_dir = individuate(pathtoreference, pathdlm=pathdlm)
     n = length(readdir(query_dir))
-    result = Vector{String}(undef, n)
+    result = fill("", n)
     p = Progress(n, 1)
     if verbose
         println("pairwise BLAST on $n sequence pairs\nquery $pathtoquery\nreference $pathtoreference")
