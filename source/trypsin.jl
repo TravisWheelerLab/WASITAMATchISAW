@@ -31,7 +31,87 @@ function trypticpeptides(
     rightbounded_halfopen_subintervals(cleavable_locii, minlength, maxlength)
 end
 
-function trypticpalindromedistribution!(
+function trypticLCSdistribution!(
+    distribution::Matrix{Int},
+    seq::AbstractString,
+    minlength::Int,
+    maxlength::Int
+)
+    trypticintervals = trypticpeptides(seq, minlength, maxlength)
+    trypticlengths = interval_length.(trypticintervals)
+    n = length(trypticintervals)
+    lazy_peptides = (seq[start:stop] for (start,stop)=trypticintervals)
+    lazy_shuffles = (shufflefast(seq[start:stop]) for (start,stop)=trypticintervals)
+    lcslengths = align(Pairwise(), 
+        lazy_peptides, 
+        lazy_shuffles; 
+        formatter=x::PairwiseAlignmentResult->Int(score(x)),
+        schema=SUBSTRING_ALIGNMENT_SCHEMA)
+    for i=1:n
+        # the distribution matrices are square with dim maxlength + 1
+        # because we have to record zero-length LCS, we add one to the lcs length.
+        # this has to accounted for later in the plotting function. 
+        distribution[trypticlengths[i], lcslengths[i] + 1] += 1
+    end
+end
+
+function trypticLCSdistribution!(
+    distribution::Matrix{Int}, 
+    seqs::Vector, 
+    minlength::Int, 
+    maxlength::Int;
+    verbose=false
+)
+    nseqs = length(seqs)
+    p = Progress(nseqs, 1, "Digesting (LCS)...")
+    @threads for i=1:nseqs
+        trypticLCSdistribution!(distribution, seqs[i], minlength, maxlength)
+        if verbose 
+            next!(p)
+        end
+    end
+end
+
+function trypticLCS2distribution!(
+    distribution::Matrix{Int},
+    seq::AbstractString,
+    minlength::Int,
+    maxlength::Int
+)
+    trypticintervals = trypticpeptides(seq, minlength, maxlength)
+    trypticintervals2 = shuffle(trypticintervals)
+    trypticlengths = interval_length.(trypticintervals)
+    n = length(trypticintervals)
+    lazy_peptides = (seq[start:stop] for (start,stop)=trypticintervals)
+    lazy_peptides2 = (shufflefast(seq[start:stop]) for (start,stop)=trypticintervals2)
+    lcslengths = align(Pairwise(), 
+        lazy_peptides, 
+        lazy_peptides2; 
+        formatter=x::PairwiseAlignmentResult->Int(score(x)),
+        schema=SUBSTRING_ALIGNMENT_SCHEMA)
+    for i=1:n
+        distribution[trypticlengths[i], lcslengths[i] + 1] += 1
+    end
+end
+
+function trypticLCS2distribution!(
+    distribution::Matrix{Int}, 
+    seqs::Vector, 
+    minlength::Int, 
+    maxlength::Int;
+    verbose=false
+)
+    nseqs = length(seqs)
+    p = Progress(nseqs, 1, "Digesting (LCS2)...")
+    @threads for i=1:nseqs
+        trypticLCS2distribution!(distribution, seqs[i], minlength, maxlength)
+        if verbose 
+            next!(p)
+        end
+    end
+end
+
+function trypticLPSdistribution!(
     distribution::Matrix{Int}, 
     seq::AbstractString, 
     minlength::Int, 
@@ -42,53 +122,25 @@ function trypticpalindromedistribution!(
     n = length(trypticintervals)
     lazy_lps = (longestpalindromicsubstring(seq[start:stop]) 
                 for (start,stop)=trypticintervals)
-    palindromelengths = interval_length.(lazy_lps)
+    lpslengths = interval_length.(lazy_lps)
     for i=1:n
-        distribution[trypticlengths[i], palindromelengths[i]] += 1
+        distribution[trypticlengths[i], lpslengths[i]] += 1
     end
 end
 
-function trypticpalindromedistribution!(
+function trypticLPSdistribution!(
     distribution::Matrix{Int}, 
     seqs::Vector, 
     minlength::Int, 
-    maxlength::Int
+    maxlength::Int;
+    verbose=false
 )
     nseqs = length(seqs)
-    p = Progress(nseqs, 1, "Digesting...")
+    p = Progress(nseqs, 1, "Digesting (LPS)...")
     @threads for i=1:nseqs
-        trypticpalindromedistribution!(distribution, seqs[i], minlength, maxlength)
-        next!(p)
-    end
-end
-
-function permutedtrypticpalindromedistribution!(
-    distribution::Matrix{Int}, 
-    seq::AbstractString, 
-    minlength::Int, 
-    maxlength::Int
-)
-    trypticintervals = trypticpeptides(seq, minlength, maxlength)
-    trypticlengths = interval_length.(trypticintervals)
-    n = length(trypticintervals)
-    lazy_lps = (longestpalindromicsubstring(shufflefast(seq[start:stop])) 
-                for (start,stop)=trypticintervals)
-    palindromelengths = interval_length.(lazy_lps)
-    for i=1:n
-        distribution[trypticlengths[i], palindromelengths[i]] += 1
-    end
-end
-
-function permutedtrypticpalindromedistribution!(
-    distribution::Matrix{Int}, 
-    seqs::Vector, 
-    minlength::Int, 
-    maxlength::Int
-)
-    nseqs = length(seqs)
-    p = Progress(nseqs, 1, "Digesting...")
-    @threads for i=1:nseqs
-        permutedtrypticpalindromedistribution!(distribution, seqs[i], minlength, maxlength)
-        next!(p)
+        trypticLPSdistribution!(distribution, seqs[i], minlength, maxlength)
+        if verbose 
+            next!(p)
+        end
     end
 end

@@ -1,24 +1,33 @@
+using StringAlgorithms: manacher
+
 """
-find the left and right bounds of the longest palindromic substring (LPS) in a 
+find the length of the longest palindromic substring (LPS) in a 
 sequence.
 """
 function longestpalindromicsubstring(
     sequence::AbstractString;
-    mode=:naive,
+    mode=:manacher,
 )
-    if length(sequence) == 0
-        return nothing, nothing
-    elseif length(sequence) == 1
-        return 1, 1
+    if length(sequence) < 2
+        return sequence
     else
         if mode == :naive
-            return _naïve(sequence)
+            radii = _naïve(sequence)
         elseif mode == :manacher
-            return _manacher(sequence)
+            radii = _manacher(sequence)
         elseif mode == :shoupu
-            return _shoupu(sequence)
+            radii = _shoupu(sequence)
         end
+        return longestpalindromicsubstring(sequence, radii)
     end
+end
+
+function longestpalindromicsubstring(sequence::AbstractString, radii::Vector{Int})
+    augmentedargmax = argmax(radii)
+    maxradii = radii[augmentedargmax]
+    leftbound = ceil(Int, augmentedargmax / 2) - floor(Int, maxradii / 2)
+    rightbound = leftbound + maxradii - 1
+    sequence[leftbound:rightbound]
 end
 
 """
@@ -79,23 +88,17 @@ at each loci of the sequence, find the left and right bounds of the LPS.
 function _naïve(
     sequence::AbstractString,
 )
-    radii = palindromeradii(sequence)
-    augmentedargmax = argmax(radii)
-    maxradii = radii[augmentedargmax]
-    leftbound = ceil(Int, augmentedargmax / 2) - floor(Int, maxradii / 2)
-    rightbound = leftbound + maxradii - 1
-    leftbound, rightbound
+    palindromeradii(sequence)
 end
 
 """
-TODO - implement manacher's algorithm for finding the LPS in linear time wrt 
-sequence length.
 dl.acm.org/doi/10.1145/321892.321896
+https://github.com/lucifer1004/StringAlgorithms.jl
 """
 function _manacher(
     sequence::AbstractString,
 )
-    @assert false "not implemented"
+    manacher(sequence)
 end
 
 """

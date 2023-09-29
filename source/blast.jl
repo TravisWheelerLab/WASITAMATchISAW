@@ -89,7 +89,6 @@ function cleanup_makeblastdb(
         end
     end
 end
-
 function cleanup_convert2blastmask(
     pathtoresult::AbstractString,
 )
@@ -115,6 +114,7 @@ function search(
     verbose=false,
     careful=false,
     ntasks=1,
+    tempdir="outputs/temp/"
 )
     if careful
         cleanup_individuate(pathtoquery)
@@ -123,7 +123,7 @@ function search(
     query_dir = individuate(pathtoquery, pathdlm=pathdlm)
     reference_dir = individuate(pathtoreference, pathdlm=pathdlm)
     n = length(readdir(query_dir))
-    result = fill("", n)
+    result = fill("∅", n)
     p = Progress(n, 1)
     if verbose
         println("pairwise BLAST on $n sequence pairs\nquery $pathtoquery\nreference $pathtoreference")

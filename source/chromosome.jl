@@ -11,7 +11,7 @@ struct NCBINucleotideChromosome <: Chromosome
 end
 
 record(chromosome::NCBINucleotideChromosome) = chromosome.record
-sequence(chromosome::NCBINucleotideChromosome) = chromosome.sequence
+Main.sequence(chromosome::NCBINucleotideChromosome) = chromosome.sequence
 gnav(chromosome::NCBINucleotideChromosome) = chromosome.gnav
 
 abstract type Annotation end
@@ -33,7 +33,8 @@ gnav(annotation::NCBIGeneAnnotation) = annotation.table[:, GNAV]
 "lazily iterates the substrings of `chromosome` induced by the intervals of `annotation`"
 function annotate(
 	chromosome::NCBINucleotideChromosome,
-	annotation::NCBIGeneAnnotation,
+	annotation::NCBIGeneAnnotation;
+	splicemasks=true
 )
 	errors = gnav(annotation) .!= gnav(chromosome)
 	if any(errors)
@@ -44,5 +45,10 @@ function annotate(
 	start = startpos(annotation)
 	stop = endpos(annotation)
 	nframes = length(annotation)
-	(view(seq, start[i]:stop[i]) for i=1:nframes)
+	frames = (view(seq, start[i]:stop[i]) for i=1:nframes)
+	if splicemasks
+		frames = replace.(frames, "N"=>"")
+	end
+	filter!(x -> length(x)>0, frames)
+	frames
 end

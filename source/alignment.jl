@@ -33,6 +33,8 @@ function _align(
     results
 end
 
+const SUBSTRING_ALIGNMENT_SCHEMA = AffineGapScoreModel(match=1, mismatch=-1e12, gap_open=-1e12, gap_extend=-1e12)
+
 abstract type AlignmentProductSpace end
 struct Pairwise <: AlignmentProductSpace end
 struct OneToMany <: AlignmentProductSpace end

@@ -1,32 +1,8 @@
 using DelimitedFiles: readdlm
-using StatsBase: sample, Weights
-
-function parse_score_matrix_distribution(
-    path_to_out::AbstractString;
-    pattern::Regex = r":\n([.\n\w\d\s\-\t\r\~\(\)\=]*)\n\n"
-)
-    out = read(path_to_out, String)
-    patterns = eachmatch(pattern, out)
-    loader = x -> readdlm(IOBuffer(x.match))
-    matrices = map(loader, patterns)
-
-    alphabet = only.(matrices[1][2, :])
-    k = length(alphabet)
-    alpha_enum = Dict(alphabet .=> 1:k)
-    frequencies = convert.(AbstractFloat, matrices[1][3, :])
-    scores = convert.(AbstractFloat, matrices[2][3:end, 2:end])
-    joints = convert.(AbstractFloat, matrices[4][3:end, 2:end])
-    marginals = convert.(AbstractFloat, matrices[5][3, :])
-    conditionals = convert.(AbstractFloat, matrices[6][3:end, 2:end])
-
-    Dict("alphabet"     => alphabet,
-        "enumerator"    => alpha_enum,
-        "frequencies"   => frequencies,
-        "scores"        => scores,
-        "joints"        => joints,
-        "marginals"     => marginals,
-        "conditionals"  => conditionals)
-end
+using StatsBase: mean, sample, Weights
+using LinearAlgebra: diag
+using FASTX: FASTARecord, sequence, description
+using ProgressMeter
 
 # modifies `distribution` so that `distribution[fixed_index] = adjusted_value` 
 # with all other values adjusted proportionately 
@@ -77,8 +53,7 @@ function adjust_distributions(
     return new_distributions
 end
 
-function bl90_mut(pctid::AbstractFloat)
-    model = parse_score_matrix_distribution(BLOSUM90)
+function adjust_model!(model::Dict, pctid::AbstractFloat)
     conditionals = model["conditionals"]
     n = size(conditionals)[1]
     old_diag = diag(conditionals)
@@ -86,7 +61,12 @@ function bl90_mut(pctid::AbstractFloat)
     adjusted_diag = (pctid / old_pctid) .* old_diag
     adjust_distributions!(conditionals, 1:n, adjusted_diag)
     model["conditionals"] = conditionals
-    return model
+end
+
+function adjust_model(model::Dict, pctid::AbstractFloat)
+    model = deepcopy(model)
+    adjust_model!(model, pctid)
+    model
 end
 
 # x -> x + k(f - x)
@@ -111,23 +91,13 @@ function halve_mutation_likelihood(substitution_model::Dict{String, Any})
     new_substituion_model
 end
 
-function mutate(
+function _mutate(
     seq::AbstractString,
-    substitution_model::Dict{String, Any};
-    n_mutations::Int = -1,
-#    alphabet::Vector{Char},
-#    enumerator::Dict{Char, Int},
-#    conditionals::Matrix{T}
-) #where T <: AbstractFloat
+    substitution_model::Dict{String, Any}
+)
     seq_vec = collect(seq)
-    if n_mutations == -1 || n_mutations ≥ length(seq)
-        mut_idxs = 1:length(seq)
-    elseif n_mutations > 0
-        mut_idxs = sample(1:length(seq), n_mutations, replace=false)
-    else
-        return seq
-    end
-    for i=mut_idxs
+    n = length(seq_vec)
+    for i=1:n
         char = seq[i]
         if char in substitution_model["enumerator"].keys
             # if the character is known, find its transition vector
@@ -140,4 +110,44 @@ function mutate(
         seq_vec[i] = sample(substitution_model["alphabet"], Weights(transition_probabilities))
     end
     join(seq_vec)
+end
+
+function mutate(
+    seq::AbstractString,
+    substitution_model::Dict{String, Any};
+    pctid::AbstractFloat=-1.0,
+)
+    if pctid != -1.0
+        substitution_model = adjust_model(substitution_model, pctid)
+    end
+    _mutate(seq, substitution_model)
+end
+
+function mutate(
+    seqs::Vector,
+    substitution_model::Dict{String, Any};
+    pctid::AbstractFloat=-1.0,
+    verbose=false,
+    nthreads=Base.Threads.nthreads(),
+)
+    if pctid != -1.0
+        substitution_model = adjust_model(substitution_model, pctid)
+    end
+    if nthreads > 1
+        n = length(seqs)
+        mutated_seqs = Vector{String}(undef, n)
+        if verbose
+            modelname = substitution_model["path"]
+            p = Progress(n, 1, "Mutating with model $modelname")
+        end
+        Base.Threads.@threads for i=1:n
+            mutated_seqs[i] = mutate(seqs[i], substitution_model)
+            if verbose
+                next!(p)
+            end
+        end
+        return mutated_seqs
+    else
+        return _mutate.(seqs, [substitution_model])
+    end
 end

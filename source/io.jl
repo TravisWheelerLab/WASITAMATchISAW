@@ -1,7 +1,56 @@
-using FASTX: FASTAReader, FASTARecord, FASTAWriter
+using FASTX: FASTAReader, FASTARecord, FASTAWriter, sequence
 using DataFrames: DataFrame, dropmissing
 using CSV
 using DelimitedFiles: readdlm, writedlm
+
+function parse_score_matrix_distribution(
+    path_to_out::AbstractString;
+    pattern::Regex = r":\n([.\n\w\d\s\-\t\r\~\(\)\=]*)\n\n"
+)
+    out = read(path_to_out, String)
+    patterns = eachmatch(pattern, out)
+    loader = x -> readdlm(IOBuffer(x.match))
+    matrices = map(loader, patterns)
+
+    alphabet = only.(matrices[1][2, :])
+    k = length(alphabet)
+    alpha_enum = Dict(alphabet .=> 1:k)
+    frequencies = convert.(AbstractFloat, matrices[1][3, :])
+    scores = convert.(AbstractFloat, matrices[2][3:end, 2:end])
+    joints = convert.(AbstractFloat, matrices[4][3:end, 2:end])
+    marginals = convert.(AbstractFloat, matrices[5][3, :])
+    conditionals = convert.(AbstractFloat, matrices[6][3:end, 2:end])
+
+    Dict("path" => path_to_out,
+        "alphabet"     => alphabet,
+        "enumerator"    => alpha_enum,
+        "frequencies"   => frequencies,
+        "scores"        => scores,
+        "joints"        => joints,
+        "marginals"     => marginals,
+        "conditionals"  => conditionals)
+end
+
+function readsequences(
+    pathtofasta::AbstractString
+)
+    String.(sequence.(readfasta(pathtofasta)))
+end
+
+function writesequences(
+    pathtofasta::AbstractString,
+    sequences::Vector;
+    descriptions::Vector{String}=Vector{String}(undef, 0),
+)
+    n = length(sequences)
+    if length(descriptions) != n
+        if length(descriptions) > 0
+            @warn "description vector and sequence vectors were different length; overwriting descriptions."
+        end
+        descriptions = string.(1:n)
+    end
+    writefasta(pathtofasta, FASTARecord.(descriptions, sequences))
+end
 
 function readfasta(
     pathtorecord::AbstractString;
@@ -55,11 +104,18 @@ function readtable(
     return DataFrame(readtable(pathtotable), columns)
 end
 
+function writetable(
+    pathtotable::AbstractString,
+    table::Matrix
+)
+    writedlm(pathtotable, table)
+end
+
 function writeframe(
     pathtoframe::AbstractString,
     frame::DataFrame,
 )
-    CSV.write(open(pathtoframe, "w"), frame)
+    CSV.write(pathtoframe, frame)
 end
 
 function readframe(
@@ -96,4 +152,4 @@ function loadchromosome(pathtorecord)
  end
 
 "load a chromosome annotation file in the NCBI tabular format."
-loadannotation(pathtoannotation) = NCBIGeneAnnotation(dropmissing(DataFrame(File(pathtoannotation))[:, ["GeneID", STARTPOS, ENDPOS, GNAV]]))
+loadannotation(pathtoannotation) = NCBIGeneAnnotation(dropmissing(DataFrame(CSV.File(pathtoannotation))[:, ["GeneID", STARTPOS, ENDPOS, GNAV]]))

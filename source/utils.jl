@@ -1,3 +1,31 @@
+using Random: shuffle!
+using FASTX: FASTARecord
+using LaTeXStrings
+
+# notation semigroup
+sprotall = "sprot"
+scop = "scop"
+sprotscop = sprotall*"\\cap "*scop
+chr22 = "chromosome22"
+chr22protein = chr22*"proteins"
+chr22pseudo = chr22*"pseudogenes"
+chr22rna = chr22*"rna"
+shuf(x) = "\\textbf{shuffled}($(x))"
+rev(x) = "\\textbf{reversed}($(x))"
+reorder(x) = "\\textbf{reordered}($(x))"
+mask(x) = "\\textbf{masked}($(x))"
+tryptic(x) = "\\textbf{tryptic}($(x))"
+permute(x) = "\\textbf{permuted}($(x))"
+LPS(x) = "\\textbf{LPS}[$(x)]"
+LCS(x, y) = "\\textbf{LCS}[$(x) ↔ $(y)]"
+BLAST(x, y) = "\\textbf{BLAST}[$(x) ↔ $(y)]"
+diff(x, y) = "$(x)-$(y)"
+avg(x) = "\\textbf{mean}[$(x)]"
+len(x) = "\\textbf{length}($(x))"
+maketicks(t::Vector{Int}) = Tuple(fill(t, 2))
+
+geometricmean(x, y) = sqrt(x*y)
+
 interval_length(interval::Tuple{Int, Int}) = 1 + interval[2] - interval[1] 
 
 # https://stackoverflow.com/questions/36367482/unzip-an-array-of-tuples-in-julia
@@ -40,6 +68,7 @@ function shufflefast(s::AbstractString)
     String(u)
 end
 
+record_id(record::FASTARecord) = split(description(record), ' ')[1]
     
 function namerecord_dir(
     pathtorecord::AbstractString;
