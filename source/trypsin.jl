@@ -1,5 +1,6 @@
 using Random: shuffle, shuffle!
 using Base.Threads: @threads
+using StringAlgorithms: longestcommonsubstring
 
 trypsin_cleave_locations(q::AbstractString) = [i for i=1:length(q) if Char(q[i]) == 'K' || Char(q[i]) == 'R']
 
@@ -42,11 +43,11 @@ function trypticLCSdistribution!(
     n = length(trypticintervals)
     lazy_peptides = (seq[start:stop] for (start,stop)=trypticintervals)
     lazy_shuffles = (shufflefast(seq[start:stop]) for (start,stop)=trypticintervals)
-    lcslengths = align(Pairwise(), 
-        lazy_peptides, 
-        lazy_shuffles; 
-        formatter=x::PairwiseAlignmentResult->Int(score(x)),
-        schema=SUBSTRING_ALIGNMENT_SCHEMA)
+    lcslengths = longestcommonsubstring.(lazypeptides, lazyshuffles)#align(Pairwise(), 
+        #lazy_peptides, 
+        #lazy_shuffles; 
+        #formatter=x::PairwiseAlignmentResult->Int(score(x)),
+        #schema=SUBSTRING_ALIGNMENT_SCHEMA)
     for i=1:n
         # the distribution matrices are square with dim maxlength + 1
         # because we have to record zero-length LCS, we add one to the lcs length.
@@ -84,11 +85,11 @@ function trypticLCS2distribution!(
     n = length(trypticintervals)
     lazy_peptides = (seq[start:stop] for (start,stop)=trypticintervals)
     lazy_peptides2 = (shufflefast(seq[start:stop]) for (start,stop)=trypticintervals2)
-    lcslengths = align(Pairwise(), 
-        lazy_peptides, 
-        lazy_peptides2; 
-        formatter=x::PairwiseAlignmentResult->Int(score(x)),
-        schema=SUBSTRING_ALIGNMENT_SCHEMA)
+    lcslengths = longestcommonsubstring.(lazypeptides, lazy_peptides2)#align(Pairwise(), 
+        #lazy_peptides, 
+        #lazy_peptides2; 
+        #formatter=x::PairwiseAlignmentResult->Int(score(x)),
+        #schema=SUBSTRING_ALIGNMENT_SCHEMA)
     for i=1:n
         distribution[trypticlengths[i], lcslengths[i] + 1] += 1
     end
@@ -122,7 +123,7 @@ function trypticLPSdistribution!(
     n = length(trypticintervals)
     lazy_lps = (longestpalindromicsubstring(seq[start:stop]) 
                 for (start,stop)=trypticintervals)
-    lpslengths = interval_length.(lazy_lps)
+    lpslengths = length.(lazy_lps)
     for i=1:n
         distribution[trypticlengths[i], lpslengths[i]] += 1
     end
