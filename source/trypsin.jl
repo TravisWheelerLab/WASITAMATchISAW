@@ -1,6 +1,6 @@
 using Random: shuffle, shuffle!
 using Base.Threads: @threads
-using StringAlgorithms: longestcommonsubstring
+using StringAlgorithms
 
 trypsin_cleave_locations(q::AbstractString) = [i for i=1:length(q) if Char(q[i]) == 'K' || Char(q[i]) == 'R']
 
@@ -43,7 +43,7 @@ function trypticLCSdistribution!(
     n = length(trypticintervals)
     lazy_peptides = (seq[start:stop] for (start,stop)=trypticintervals)
     lazy_shuffles = (shufflefast(seq[start:stop]) for (start,stop)=trypticintervals)
-    lcslengths = longestcommonsubstring.(lazypeptides, lazyshuffles)#align(Pairwise(), 
+    lcslengths = (x->length(x[1])).(longestcommonsubstring.(lazy_peptides, lazy_shuffles))#align(Pairwise(), 
         #lazy_peptides, 
         #lazy_shuffles; 
         #formatter=x::PairwiseAlignmentResult->Int(score(x)),
@@ -85,7 +85,7 @@ function trypticLCS2distribution!(
     n = length(trypticintervals)
     lazy_peptides = (seq[start:stop] for (start,stop)=trypticintervals)
     lazy_peptides2 = (shufflefast(seq[start:stop]) for (start,stop)=trypticintervals2)
-    lcslengths = longestcommonsubstring.(lazypeptides, lazy_peptides2)#align(Pairwise(), 
+    lcslengths = (x->length(x) > 0 ? length(x[1]) : 0).(longestcommonsubstring.(lazy_peptides, lazy_peptides2))#align(Pairwise(), 
         #lazy_peptides, 
         #lazy_peptides2; 
         #formatter=x::PairwiseAlignmentResult->Int(score(x)),
