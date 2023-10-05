@@ -1,54 +1,38 @@
-using DataFrames: DataFrame, dropmissing
-using FASTX: FASTARecord
+using FASTX: FASTARecord, description
+import Base.\
 
-abstract type Chromosome end
+abstract type Genome end
 
-struct NCBINucleotideChromosome <: Chromosome
-    record::FASTARecord
-    sequence::AbstractString
-    gnav::AbstractString
-    _metadata::AbstractString
+struct FASTXGenome <: Genome
+    sequences::Vector{FASTARecord}
 end
 
-record(chromosome::NCBINucleotideChromosome) = chromosome.record
-Main.sequence(chromosome::NCBINucleotideChromosome) = chromosome.sequence
-gnav(chromosome::NCBINucleotideChromosome) = chromosome.gnav
+chromosome(n::Int, genome::FASTXGenome) = filter(
+    record -> contains(description(record), "chr$(n)"), 
+    genome.sequences)
 
 abstract type Annotation end
 
-struct NCBIGeneAnnotation <: Annotation 
+struct GTFAnnotation <: Annotation
     table::DataFrame
 end
 
-STARTPOS = "start_position_on_the_genomic_accession"
-ENDPOS = "end_position_on_the_genomic_accession"
-GNAV = "genomic_nucleotide_accession.version"
+\(annotation::GTFAnnotation, rowmask::BitVector) = GTFAnnotation(annotation.table[rowmask, :])
 
-Base.length(annotation::NCBIGeneAnnotation) = size(annotation.table)[1]
+chromosome(n::Int, annotation::GTFAnnotation) = annotation \ contains.(annotation.table.chromosome, "chr$(n)")
 
-startpos(annotation::NCBIGeneAnnotation) = annotation.table[:, STARTPOS]
-endpos(annotation::NCBIGeneAnnotation) = annotation.table[:, ENDPOS]
-gnav(annotation::NCBIGeneAnnotation) = annotation.table[:, GNAV]
+exon(annotation::GTFAnnotation) = annotation \ annotation.table.type .== "exon"
 
-"lazily iterates the substrings of `chromosome` induced by the intervals of `annotation`"
-function annotate(
-	chromosome::NCBINucleotideChromosome,
-	annotation::NCBIGeneAnnotation;
-	splicemasks=true
-)
-	errors = gnav(annotation) .!= gnav(chromosome)
-	if any(errors)
-	    rate = sum(errors) / length(errors)
-		@warn "the chromosome accession does not match the accession version of $(100 * rate)% annotated regions."
-	end
-	seq = sequence(chromosome)
-	start = startpos(annotation)
-	stop = endpos(annotation)
-	nframes = length(annotation)
-	frames = (view(seq, start[i]:stop[i]) for i=1:nframes)
-	if splicemasks
-		frames = replace.(frames, "N"=>"")
-	end
-	filter!(x -> length(x)>0, frames)
-	frames
+function intron(annotation::GTFAnnotation)
+    return -1
+    # every gene has a sequence of indices bracketed by the gene's start and stop locations and filled in the middle by the start and stop of each exon. introns are from the stop one of exon to the start of another, ie the first intron is from gene-start to intron-1-stop. we'll have to extract each of these indices, put them in order, then iterate pairs via 2-steps.
+    # note - subsample! some introns are a million bp.
 end
+
+function intergenic(annotation::GTFAnnotation)
+    # from gene-n-stop to gene-{n+1}-start
+    # going to have to subsample bc intergenic regions are even bigger than introns.
+end
+
+const GTFCOLUMNS = ["chromosome","version","type","start","stop","dot","parity","zero","metadata"]
+

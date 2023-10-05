@@ -142,14 +142,7 @@ function readscopclass(
     return scoptable
 end
 
+readgenome(pathtogenome) = FASTXGenome(readfasta(pathtogenome))
 
-"load chromosome record from a .fasta."
-function loadchromosome(pathtorecord)
-    record = readfasta(pathtorecord, singleton=true)
-    metadata, sequence = split(string(record), '\n')
-    gnav = split(metadata, ' ')[1][2:end]
-    NCBINucleotideChromosome(record, sequence, gnav, metadata)
- end
-
-"load a chromosome annotation file in the NCBI tabular format."
-loadannotation(pathtoannotation) = NCBIGeneAnnotation(dropmissing(DataFrame(CSV.File(pathtoannotation))[:, ["GeneID", STARTPOS, ENDPOS, GNAV]]))
+readgtf(pathtogtf) = GTFAnnotation(readtable(pathtogtf, GTFCOLUMNS))
+writegtf(pathtogtf, annotation::GTFAnnotation) = writetable(pathtogtf, Matrix(annotation.table))
