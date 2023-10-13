@@ -29,6 +29,8 @@ geometricmean(x, y) = sqrt(x*y)
 
 interval_length(interval::Tuple{Int, Int}) = 1 + interval[2] - interval[1] 
 
+interval_in(z::Real, a::Tuple{Real, Real}) = a[1] <= z <= a[2]
+
 # https://stackoverflow.com/questions/36367482/unzip-an-array-of-tuples-in-julia
 unzip(a) = map(x->getfield.(a, x), fieldnames(eltype(a)))
 
