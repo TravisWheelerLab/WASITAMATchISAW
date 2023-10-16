@@ -32,7 +32,7 @@ function parse_score_matrix_distribution(
 end
 
 function readsequences(
-    pathtofasta::AbstractString
+    pathtofasta::AbstractString;
 )
     String.(sequence.(readfasta(pathtofasta)))
 end
@@ -143,6 +143,3 @@ function readscopclass(
 end
 
 readgenome(pathtogenome) = FASTXGenome(readfasta(pathtogenome))
-
-readgtf(pathtogtf) = GTFAnnotation(readtable(pathtogtf, GTFCOLUMNS))
-writegtf(pathtogtf, annotation::GTFAnnotation) = writetable(pathtogtf, Matrix(annotation.table))
