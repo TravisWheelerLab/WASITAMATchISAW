@@ -6,6 +6,7 @@ const BLASTP_OUTFMT = "6 score evalue qseqid qstart qend sseqid sstart send"
 const BLASTP_COLUMNS = split(BLASTP_OUTFMT, ' ')[2:end]
 
 function blastp(
+    pathtoresult::String,
     pathtoqueryseq::String,
     pathtotargetdb::String;
     pathtomaskdb::String="",
@@ -16,7 +17,8 @@ function blastp(
     else
         command = `blastp -query $pathtoqueryseq -db $pathtotargetdb -word_size 4 -outfmt $BLASTP_OUTFMT -num_threads $numthreads -db_hard_mask 100`
     end
-    read(command, String)
+    read(pipeline(command, `tee $pathtoresult`), String)
+    1
 end
 
 function parse_blastp(
@@ -32,7 +34,6 @@ function parse_blastp(
             print("RESULT ", result)
         end
     end
-    
 end
 
 function parse_blastp(
@@ -108,26 +109,23 @@ end
 
 function search(
     ::Pairwise,
+    result_dir,
     pathtoquery, 
     pathtoreference;
     pathdlm='/',
     verbose=false,
-    careful=false,
     ntasks=1,
     tempdir="outputs/temp/"
 )
-    if careful
-        cleanup_individuate(pathtoquery)
-        cleanup_individuate(pathtoreference)
-    end
+    println("individuating")
     query_dir = individuate(pathtoquery, pathdlm=pathdlm)
     reference_dir = individuate(pathtoreference, pathdlm=pathdlm)
     n = length(readdir(query_dir))
-    result = fill("∅", n)
     p = Progress(n, 1)
     if verbose
         println("pairwise BLAST on $n sequence pairs\nquery $pathtoquery\nreference $pathtoreference")
     end
+    println("aligning...")
     nchunk = ceil(Int, n / ntasks)
     # thanks, tkf.
     # https://discourse.julialang.org/t/how-to-launch-several-run-cmd-in-parallel/68862/3
@@ -141,11 +139,12 @@ function search(
                     end
                     continue
                 end
+                result_file = "$(result_dir)/$i"
                 query_file = namerecord_file(query_dir, i)
                 reference_file = namerecord_file(reference_dir, i)
                 reference_db = reference_dir * string(i)
                 makeblastdb(reference_file, reference_db)
-                result[i] = blastp(query_file, reference_db; numthreads=1)
+                blastp(result_file, query_file, reference_db; numthreads=1)
                 cleanup_makeblastdb(reference_db)
                 if verbose
                     next!(p)
@@ -157,5 +156,5 @@ function search(
     end
     cleanup_individuate(pathtoquery, pathdlm=pathdlm)
     cleanup_individuate(pathtoreference, pathdlm=pathdlm)
-    result
+    1
 end
