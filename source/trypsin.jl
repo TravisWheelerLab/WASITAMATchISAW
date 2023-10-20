@@ -2,7 +2,7 @@ using Random: shuffle, shuffle!
 using Base.Threads: @threads
 using StringAlgorithms
 
-trypsin_cleave_locations(q::AbstractString) = [i for i=1:length(q) if Char(q[i]) == 'K' || Char(q[i]) == 'R']
+trypsin_cleave_locations(q::AbstractString) = union([i for i=1:length(q) if Char(q[i]) == 'K' || Char(q[i]) == 'R'], [1, length(q)])
 
 isproline(c::Char) = c == 'P'
 
