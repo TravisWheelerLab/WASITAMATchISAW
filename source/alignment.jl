@@ -40,13 +40,17 @@ struct Pairwise <: AlignmentProductSpace end
 struct OneToMany <: AlignmentProductSpace end
 struct ManyToMany <: AlignmentProductSpace end
 
+"""
+if you pass a custom formatter, be sure to define it as x::T -> y::S.
+If the output is not typed, `result_type` (line 16) cannot accurately 
+measured and ends up as `Any`."""
 function align(
     ::Pairwise,
     queries,
     references;
     model=LocalAlignment(),
     schema=AffineGapScoreModel(BLOSUM62, -11, -1),
-    formatter=x::PairwiseAlignmentResult->x,
+    formatter=x::PairwiseAlignmentResult->x::PairwiseAlignmentResult,
     verbose=false,
 )
     n = length(queries)
