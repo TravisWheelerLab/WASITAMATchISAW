@@ -31,6 +31,6 @@ end #function
 
 import Distributions: fit
 function fit(::Type{Gumbel}, data)
-    μ, σ = gumbel_fit(data)
-    Gumbel(μ, σ)
+    position, scale = gumbel_fit(data)
+    Gumbel(position, scale)
 end
