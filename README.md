@@ -1,8 +1,9 @@
 ## WAS IT A MATch I SAW?
-<a href="https://www.biorxiv.org/content/10.1101/2023.06.19.545636v3">Approximate palindromes lead to overstated false match rates in benchmarks using reversed sequences</a>, Glidden et al., 2024.
 
-#### Supplemental Materials
-Each figure's link takes you to the notebook with which it was generated.
+This repository contains information required to reproduce the figures associated with the paper:
+[WAS IT A MATch I SAW? Approximate palindromes lead to overstated false match rates in benchmarks using reversed sequences](https://academic.oup.com/bioinformaticsadvances/article/4/1/vbae052/7642489), Glidden-Handgis and Wheeler, 2024.
+
+Each link takes you to the notebook used to produce the associated figure.
 - [Fig 2.](LengthDistribution-SwissProt.ipynb)
 - [Fig 3.](BLAST-SprotVariants.ipynb)
 - [Fig 4.](BLAST-MaskedSprot.ipynb)
